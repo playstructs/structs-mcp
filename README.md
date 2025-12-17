@@ -106,7 +106,14 @@ MCP_SERVER_NAME=structs-mcp
 MCP_SERVER_VERSION=0.1.0
 
 # Resource Paths
-AI_DOCS_PATH=../../ai
+# By default, structs-mcp will automatically clone the Structs Compendium
+# into ./data/structs-compendium on first run. Set AI_DOCS_PATH if you want
+# to point at a different checkout (for example, a local structs-docs/ai folder).
+# AI_DOCS_PATH=../../ai
+
+# Structs Compendium Repository (optional override)
+# Default (if unset): https://github.com/playstructs/structs-compendium.git
+STRUCTS_MCP_COMPENDIUM_REPO=https://github.com/playstructs/structs-compendium.git
 
 # API Endpoints (All services now available for testing)
 CONSENSUS_RPC_URL=http://localhost:26657

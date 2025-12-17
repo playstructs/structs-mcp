@@ -18,6 +18,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { getResource, listResources, getResourceMimeType } from "./resources/index.js";
 import { config } from "./config.js";
+import { ensureCompendiumPresent } from "./utils/compendium.js";
 // Tool definitions and handlers are now modular
 import { getAllToolDefinitions } from "./tools/definitions/index.js";
 import { getToolHandler } from "./tools/handlers/index.js";
@@ -48,6 +49,12 @@ async function main() {
   // Get AI docs path from environment or use default
   const aiDocsPath = process.env.AI_DOCS_PATH || config.aiDocsPath;
   console.error(`📁 AI Docs Path: ${aiDocsPath}`);
+
+  // Ensure the Structs Compendium is present at the AI docs path.
+  // If the directory is missing or empty, this will automatically
+  // clone the default repository (or the one specified via
+  // STRUCTS_MCP_COMPENDIUM_REPO).
+  await ensureCompendiumPresent(aiDocsPath);
 
   // Phase 1: Resource Server
   console.error("📚 Setting up resource handlers...");

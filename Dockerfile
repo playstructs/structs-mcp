@@ -33,12 +33,21 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 
-# Create directory for AI docs (will be mounted as volume)
+# Copy structs-compendium data directory
+# This provides the compendium data baked into the image as a fallback
+# If AI_DOCS_PATH points elsewhere (e.g., via volume mount), that takes precedence
+COPY data/structs-compendium ./data/structs-compendium
+
+# Install git for runtime cloning (if compendium needs to be updated or cloned elsewhere)
+RUN apk add --no-cache git
+
+# Create directory for AI docs (will be mounted as volume if needed)
 RUN mkdir -p /app/ai
 
 # Set environment variables with defaults
 ENV NODE_ENV=production
-ENV AI_DOCS_PATH=/app/ai
+# Default to baked-in compendium, but can be overridden via volume mount to /app/ai
+ENV AI_DOCS_PATH=/app/data/structs-compendium
 ENV CONSENSUS_RPC_URL=http://localhost:26657
 ENV CONSENSUS_API_URL=http://localhost:1317
 ENV WEBAPP_API_URL=http://localhost:8080

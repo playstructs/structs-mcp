@@ -8,7 +8,11 @@
  * Default configuration
  */
 export const config = {
-  aiDocsPath: process.env.AI_DOCS_PATH || '../../ai',
+  // Base path for AI documentation / Structs Compendium data.
+  // By default this points to a local clone of the structs-compendium
+  // repository under ./data/structs-compendium. This can be overridden
+  // with AI_DOCS_PATH if you want to point at a different checkout.
+  aiDocsPath: process.env.AI_DOCS_PATH || './data/structs-compendium',
   cacheEnabled: true,
   cacheMaxSize: 1000,
   logLevel: process.env.LOG_LEVEL || 'info',

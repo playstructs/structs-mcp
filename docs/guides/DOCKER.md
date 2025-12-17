@@ -25,7 +25,6 @@ docker build -t structs-mcp-server:latest .
 **For stdio transport** (default):
 ```bash
 docker run -it \
-  -v $(pwd)/../../ai:/app/ai:ro \
   -e CONSENSUS_API_URL=http://host.docker.internal:1317 \
   -e WEBAPP_API_URL=http://host.docker.internal:8080 \
   -e NATS_URL=nats://host.docker.internal:4222 \
@@ -37,7 +36,6 @@ docker run -it \
 ```bash
 docker run -d \
   -p 3000:3000 \
-  -v $(pwd)/../../ai:/app/ai:ro \
   -e MCP_TRANSPORT=http \
   -e CONSENSUS_API_URL=http://host.docker.internal:1317 \
   -e WEBAPP_API_URL=http://host.docker.internal:8080 \
@@ -50,7 +48,6 @@ docker run -d \
 ```bash
 docker run -d \
   -p 3000:3000 \
-  -v $(pwd)/../../ai:/app/ai:ro \
   -e MCP_TRANSPORT=http \
   -e CONSENSUS_API_URL=http://host.docker.internal:1317 \
   -e WEBAPP_API_URL=http://host.docker.internal:8080 \
@@ -107,8 +104,15 @@ docker-compose up -d
 The following environment variables can be set:
 
 ```env
-# Required
+# Resource Path (optional)
+# By default, the server will clone the Structs Compendium into the AI docs
+# directory (inside the container this is /app/ai by default). Set AI_DOCS_PATH
+# if you want to point at a mounted directory instead.
 AI_DOCS_PATH=/app/ai
+
+# Structs Compendium Repository (optional override)
+# Default (if unset): https://github.com/playstructs/structs-compendium.git
+STRUCTS_MCP_COMPENDIUM_REPO=https://github.com/playstructs/structs-compendium.git
 
 # API Endpoints (defaults provided)
 CONSENSUS_RPC_URL=http://localhost:26657
@@ -138,10 +142,9 @@ DATABASE_URL=postgresql://user:password@host.docker.internal:5432/structs
 
 ### Volume Mounts
 
-**Required**:
-- `/app/ai` - AI documentation directory (read-only recommended)
-
-**Optional**:
+**Optional (override built-in clone)**:
+- `/app/ai` - AI documentation directory (read-only recommended). If not mounted,
+  the container will automatically clone the Structs Compendium into this path.
 - `.env` file (if using environment file)
 
 ---
@@ -225,7 +228,6 @@ docker build --target builder -t structs-mcp-server:dev .
 # Run with volume mounts for live development
 docker run -it \
   -v $(pwd)/src:/app/src \
-  -v $(pwd)/../../ai:/app/ai:ro \
   structs-mcp-server:dev \
   npm run dev
 ```
@@ -234,7 +236,6 @@ docker run -it \
 
 ```bash
 docker run -it \
-  -v $(pwd)/../../ai:/app/ai:ro \
   structs-mcp-server:latest \
   npm test
 ```
