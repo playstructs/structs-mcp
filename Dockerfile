@@ -33,16 +33,8 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 
-# Copy structs-compendium data directory
-# This provides the compendium data baked into the image as a fallback
-# If AI_DOCS_PATH points elsewhere (e.g., via volume mount), that takes precedence
-COPY data/structs-compendium ./data/structs-compendium
-
 # Install git for runtime cloning (if compendium needs to be updated or cloned elsewhere)
 RUN apk add --no-cache git
-
-# Create directory for AI docs (will be mounted as volume if needed)
-RUN mkdir -p /app/ai
 
 # Set environment variables with defaults
 ENV NODE_ENV=production
@@ -58,7 +50,7 @@ ENV NATS_WEBSOCKET_URL=ws://localhost:1443
 # ENV DATABASE_URL=postgresql://user:password@localhost:5432/structs
 
 # MCP Transport Configuration
-ENV MCP_TRANSPORT=stdio
+ENV MCP_TRANSPORT=http
 ENV MCP_HTTP_PORT=3000
 ENV MCP_HTTP_HOST=0.0.0.0
 
