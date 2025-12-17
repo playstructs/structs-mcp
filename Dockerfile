@@ -21,6 +21,8 @@ RUN npm run build
 # Stage 2: Production
 FROM node:20-alpine AS production
 
+RUN apk add --no-cache git
+
 # Set working directory
 WORKDIR /app
 
