@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  structs-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: structs-mcp-server:latest
+    container_name: structs-mcp-server
+    restart: unless-stopped
+    
+    # Mount AI documentation directory
+    volumes:
+      - ../../ai:/app/ai:ro  # Read-only mount of AI docs
+    
+    # Environment variables
+    environment:
+      - NODE_ENV=production
+      - AI_DOCS_PATH=/app/ai
+      # Use host.docker.internal to access services on the host machine
+      # For services in Docker Compose, use service names instead
+      - CONSENSUS_RPC_URL=${CONSENSUS_RPC_URL:-http://host.docker.internal:26657}
+      - CONSENSUS_API_URL=${CONSENSUS_API_URL:-http://host.docker.internal:1317}
+      - WEBAPP_API_URL=${WEBAPP_API_URL:-http://host.docker.internal:8080}
+      - NATS_URL=${NATS_URL:-nats://host.docker.internal:4222}
+      - NATS_WEBSOCKET_URL=${NATS_WEBSOCKET_URL:-ws://host.docker.internal:1443}
+      # Database (required for transaction submission and player creation)
+      - DATABASE_URL=${DATABASE_URL:-postgresql://user:password@host.docker.internal:5432/structs}
+      # Database access control:
+      # - When DANGER=true: enable database-backed transactions (write operations)
+      # - When DANGER=false (default): run in read-only mode via APIs only
+      - DANGER=${DANGER:-false}
+      # Proof-of-work configuration (see README and AGE-CALCULATION-AUTOMATIC.md)
+      - TARGET_DIFFICULTY_START=${TARGET_DIFFICULTY_START:-5}
+      # References feature (optional; defaults keep it disabled but discoverable)
+      - REFERENCES_ENABLED=${REFERENCES_ENABLED:-false}
+      - MCP_TRANSPORT=${MCP_TRANSPORT:-stdio}
+      - MCP_HTTP_PORT=${MCP_HTTP_PORT:-3000}
+      - MCP_HTTP_HOST=${MCP_HTTP_HOST:-0.0.0.0}
+    
+    # Use bridge network (default) - host.docker.internal works on Mac/Windows
+    # For Linux, you may need to use network_mode: host or add extra_hosts
+    # network_mode: host  # Uncomment for Linux if host.docker.internal doesn't work
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Linux compatibility
+    
+    # Ports (for HTTP transport mode)
+    ports:
+      - "${MCP_HTTP_PORT:-3000}:3000"  # Expose HTTP port if using HTTP transport
+    
+    # stdio support (for stdio transport mode)
+    stdin_open: true  # Keep STDIN open (required for stdio MCP)
+    tty: true  # Allocate a pseudo-TTY (required for stdio MCP)
+    
+    # User
+    user: "1001:1001"  # Non-root user (mcp user from Dockerfile)
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+# Uncomment if using bridge network
+# networks:
+#   structs-network:
+#     external: true
+
