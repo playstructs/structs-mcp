@@ -48,6 +48,10 @@ export async function submitTransaction(
       'fleet_move': 'tx_fleet_move',
       'guild_membership_join': 'tx_guild_membership_join',
       'guild_membership_leave': 'tx_guild_membership_leave',
+      'reactor-infuse': 'tx_reactor_infuse',
+      'reactor-defuse': 'tx_reactor_defuse',
+      'reactor-begin-migration': 'tx_reactor_begin_migration',
+      'reactor-cancel-defusion': 'tx_reactor_cancel_defusion',
       // Add more mappings as needed
     };
 
@@ -140,6 +144,54 @@ export async function submitTransaction(
         }
         sql = `SELECT signer.tx_fleet_move($1, $2, $3) as result`;
         params = [player_id, args.fleet_id, args.destination_planet_id];
+        break;
+
+      case 'reactor-infuse':
+        if (!args.reactor_id || !args.amount) {
+          return {
+            status: 'error',
+            message: 'Missing required arguments',
+            error: 'reactor-infuse requires: reactor_id, amount',
+          };
+        }
+        sql = `SELECT signer.tx_reactor_infuse($1, $2, $3) as result`;
+        params = [player_id, args.reactor_id, args.amount];
+        break;
+
+      case 'reactor-defuse':
+        if (!args.reactor_id || !args.amount) {
+          return {
+            status: 'error',
+            message: 'Missing required arguments',
+            error: 'reactor-defuse requires: reactor_id, amount',
+          };
+        }
+        sql = `SELECT signer.tx_reactor_defuse($1, $2, $3) as result`;
+        params = [player_id, args.reactor_id, args.amount];
+        break;
+
+      case 'reactor-begin-migration':
+        if (!args.reactor_id) {
+          return {
+            status: 'error',
+            message: 'Missing required arguments',
+            error: 'reactor-begin-migration requires: reactor_id',
+          };
+        }
+        sql = `SELECT signer.tx_reactor_begin_migration($1, $2) as result`;
+        params = [player_id, args.reactor_id];
+        break;
+
+      case 'reactor-cancel-defusion':
+        if (!args.reactor_id) {
+          return {
+            status: 'error',
+            message: 'Missing required arguments',
+            error: 'reactor-cancel-defusion requires: reactor_id',
+          };
+        }
+        sql = `SELECT signer.tx_reactor_cancel_defusion($1, $2) as result`;
+        params = [player_id, args.reactor_id];
         break;
 
       default:

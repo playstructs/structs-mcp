@@ -15,8 +15,8 @@ export const actionTools: Tool[] = [
       properties: {
         action: {
           type: "string",
-          description: "What action to perform: 'explore' (explore a planet), 'struct_build_initiate' (start building a struct), 'struct_build_complete' (finish building a struct), 'fleet_move' (move a fleet), 'guild_membership_join' (join a guild), or 'guild_membership_leave' (leave a guild)",
-          enum: ["explore", "struct_build_initiate", "struct_build_complete", "fleet_move", "guild_membership_join", "guild_membership_leave"],
+          description: "What action to perform: 'explore' (explore a planet), 'struct_build_initiate' (start building a struct), 'struct_build_complete' (finish building a struct), 'fleet_move' (move a fleet), 'guild_membership_join' (join a guild), 'guild_membership_leave' (leave a guild), 'reactor-infuse' (infuse reactor with Alpha Matter, also handles validation delegation), 'reactor-defuse' (defuse reactor, also handles validation undelegation), 'reactor-begin-migration' (begin redelegation process), or 'reactor-cancel-defusion' (cancel undelegation process)",
+          enum: ["explore", "struct_build_initiate", "struct_build_complete", "fleet_move", "guild_membership_join", "guild_membership_leave", "reactor-infuse", "reactor-defuse", "reactor-begin-migration", "reactor-cancel-defusion"],
         },
         player_id: {
           type: "string",
@@ -62,6 +62,14 @@ export const actionTools: Tool[] = [
             guild_id: {
               type: "string",
               description: "Guild ID (for guild_membership_join)",
+            },
+            reactor_id: {
+              type: "string",
+              description: "Reactor ID (e.g., '3-1') - Required for reactor-infuse, reactor-defuse, reactor-begin-migration, reactor-cancel-defusion",
+            },
+            amount: {
+              type: "string",
+              description: "Amount in ualpha (micrograms of Alpha Matter, e.g., '1000000' for 1 gram) - Required for reactor-infuse and reactor-defuse",
             },
           },
           additionalProperties: true,

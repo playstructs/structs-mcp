@@ -42,11 +42,11 @@ RUN apk add --no-cache git
 ENV NODE_ENV=production
 # Default to baked-in compendium, but can be overridden via volume mount to /app/ai
 ENV AI_DOCS_PATH=/app/data/structs-compendium
-ENV CONSENSUS_RPC_URL=http://localhost:26657
-ENV CONSENSUS_API_URL=http://localhost:1317
-ENV WEBAPP_API_URL=http://localhost:8080
-ENV NATS_URL=nats://localhost:4222
-ENV NATS_WEBSOCKET_URL=ws://localhost:1443
+ENV CONSENSUS_RPC_URL=http://structsd:26657
+ENV CONSENSUS_API_URL=http://structsd:1317
+ENV WEBAPP_API_URL=http://structs-webapp:8080
+ENV NATS_URL=nats://structs-nats:4222
+ENV NATS_WEBSOCKET_URL=ws://structs-nats:1443
 
 # Database (Optional)
 # ENV DATABASE_URL=postgresql://user:password@localhost:5432/structs
