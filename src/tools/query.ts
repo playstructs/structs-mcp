@@ -10,6 +10,8 @@ import axios, { AxiosError } from 'axios';
 import { validateEntityId } from './validation.js';
 import { config } from '../config.js';
 import { query as executeQuery, isDangerEnabled, getDangerErrorResponse } from '../utils/database.js';
+import { getAllToolMetadata } from '../utils/tool-metadata.js';
+import { getAllToolDefinitions } from './definitions/index.js';
 
 /**
  * Get API configuration from config
@@ -249,6 +251,12 @@ export async function queryEndpoints(
     entity?: string;
     category?: string;
   }>;
+  mcp_tools?: Array<{
+    name: string;
+    category: string;
+    entity_type?: string;
+    description: string;
+  }>;
   error?: string;
 }> {
   try {
@@ -302,8 +310,41 @@ export async function queryEndpoints(
       filtered = filtered.filter((ep) => ep.category === category);
     }
 
+    // Include MCP tool metadata for AI agent discovery
+    const toolMetadata = getAllToolMetadata();
+    const toolDefinitions = getAllToolDefinitions();
+    const toolMap = new Map(toolDefinitions.map(tool => [tool.name, tool]));
+    
+    const mcpTools = toolMetadata.map(tool => {
+      const toolDef = toolMap.get(tool.name);
+      return {
+        name: tool.name,
+        category: tool.category,
+        entity_type: tool.entityType,
+        description: toolDef?.description || '',
+      };
+    });
+
+    // Filter MCP tools if filters are applied
+    let filteredMcpTools = mcpTools;
+    if (entityType) {
+      filteredMcpTools = filteredMcpTools.filter(tool => tool.entity_type === entityType);
+    }
+    if (category) {
+      // Map category filter to tool category
+      const categoryMap: Record<string, string> = {
+        'queries': 'query',
+        'transactions': 'action',
+        'calculations': 'calculation',
+        'validations': 'validation',
+      };
+      const toolCategory = categoryMap[category] || category;
+      filteredMcpTools = filteredMcpTools.filter(tool => tool.category === toolCategory);
+    }
+
     return {
       endpoints: filtered,
+      mcp_tools: filteredMcpTools.length > 0 ? filteredMcpTools : undefined,
     };
   } catch (error) {
     return {

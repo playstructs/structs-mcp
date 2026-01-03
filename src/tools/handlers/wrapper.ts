@@ -12,6 +12,7 @@ import {
   addReferencesToResponse,
 } from '../../utils/references.js';
 import type { ReferenceOptions } from '../../types/references.js';
+import { createStructuredError } from '../../utils/errors.js';
 
 /**
  * Create a standardized handler with error handling and optional references support
@@ -100,15 +101,13 @@ export function createHandler<T>(
         ],
       };
     } catch (error) {
+      // Create structured error response matching tool-specifications.md
+      const structuredError = createStructuredError(error);
       return {
         content: [
           {
             type: "text",
-            text: JSON.stringify({
-              error: error instanceof Error ? error.message : 'Unknown error',
-              status: 'error',
-              timestamp: new Date().toISOString(),
-            }, null, 2),
+            text: JSON.stringify(structuredError, null, 2),
           },
         ],
         isError: true,

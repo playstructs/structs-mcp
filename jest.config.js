@@ -11,6 +11,7 @@ export default {
       useESM: true,
     }],
   },
+  testSequencer: '<rootDir>/tests/test-sequencer.js',
   testMatch: [
     '**/tests/**/*.test.ts',
     '**/__tests__/**/*.ts',

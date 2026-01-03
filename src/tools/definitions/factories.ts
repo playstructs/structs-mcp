@@ -93,7 +93,7 @@ export function createListTool(
   const pluralName = entityName === 'struct_type' ? 'struct_types' : entityName.toLowerCase() + 's';
   return {
     name: `structs_list_${pluralName}`,
-    description: description || `List all ${pluralName} from consensus API with optional pagination`,
+    description: description || `Get a list of all ${pluralName}. You can request more results using pagination.`,
     inputSchema: {
       type: "object",
       properties: {
