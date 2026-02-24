@@ -74,8 +74,8 @@ function runGitClone(repoUrl: string, targetDir: string): Promise<void> {
  * @param aiDocsPath - Target directory where the compendium should live
  */
 export async function ensureCompendiumPresent(aiDocsPath: string): Promise<void> {
-  // Default repository hosting the Structs Compendium
-  const defaultRepoUrl = 'https://github.com/playstructs/structs-compendium.git';
+  // Default repository: structs-ai (Markdown-first compendium for AI agents)
+  const defaultRepoUrl = 'https://github.com/playstructs/structs-ai.git';
 
   // Allow override via environment variable
   const repoUrl = process.env.STRUCTS_MCP_COMPENDIUM_REPO || defaultRepoUrl;

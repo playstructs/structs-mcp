@@ -111,8 +111,11 @@ export const DEFAULT_REFERENCE_OPTIONS: Required<Omit<ReferenceOptions, "include
  * @param entityId - Entity ID (e.g., "2-1")
  * @returns Entity type or null if invalid
  */
-export function getEntityTypeFromId(entityId: string): EntityType | null {
-  const match = entityId.match(/^(\d+)-(\d+)$/);
+export function getEntityTypeFromId(entityId: string | undefined | null): EntityType | null {
+  if (entityId === undefined || entityId === null || typeof entityId !== 'string') {
+    return null;
+  }
+  const match = entityId.trim().match(/^(\d+)-(\d+)$/);
   if (!match) {
     return null;
   }
@@ -131,7 +134,7 @@ export function getEntityTypeFromId(entityId: string): EntityType | null {
  * @param entityId - Entity ID to check
  * @returns True if valid entity ID format and type code
  */
-export function isValidEntityId(entityId: string): boolean {
+export function isValidEntityId(entityId: string | undefined | null): boolean {
   return getEntityTypeFromId(entityId) !== null;
 }
 

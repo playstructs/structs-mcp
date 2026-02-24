@@ -8,7 +8,7 @@
 
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
-import { join } from 'path';
+import path from 'path';
 import { parseResourceURI, uriToFilePath } from '../utils/uri.js';
 import { scanAllResources, getResourceMimeType } from './scanner.js';
 import type { Resource } from '@modelcontextprotocol/sdk/types.js';
@@ -51,19 +51,36 @@ export async function getResource(
   if (!parsed) {
     return null;
   }
-  
+
   // Convert to file path
   const filePath = uriToFilePath(uri, aiDocsPath);
-  if (!filePath || !existsSync(filePath)) {
+  if (!filePath) {
     return null;
   }
-  
+
+  // Compendium is now Markdown-first (structs-ai). For legacy URIs that request
+  // .json or .yaml, resolve to the same path with .md first.
+  const ext = path.extname(filePath).toLowerCase();
+  const legacyExtensions = ['.json', '.yaml', '.yml'];
+  const resolvedPath =
+    legacyExtensions.includes(ext) && parsed.path
+      ? (() => {
+          const basePath = path.join(path.dirname(filePath), path.basename(filePath, ext));
+          const mdPath = `${basePath}.md`;
+          return existsSync(mdPath) ? mdPath : filePath;
+        })()
+      : filePath;
+
+  if (!existsSync(resolvedPath)) {
+    return null;
+  }
+
   // Read file
   try {
-    const content = await readFile(filePath, 'utf-8');
-    
-    // Determine MIME type from extension
-    const mimeType = getMimeType(filePath);
+    const content = await readFile(resolvedPath, 'utf-8');
+
+    // Determine MIME type from the resolved file's extension
+    const mimeType = getMimeType(resolvedPath);
     
     // Cache resource
     resourceCache.set(uri, {

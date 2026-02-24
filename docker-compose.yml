@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
     
     # Mount AI documentation directory (optional)
-    # If mounted, this overrides the baked-in compendium at /app/data/structs-compendium
+    # If mounted, this overrides the baked-in compendium at /app/data/structs-ai
     # If not mounted, the image will use the baked-in compendium by default
     volumes:
       - ../../ai:/app/ai:ro  # Read-only mount of AI docs (comment out to use baked-in compendium)
@@ -18,7 +18,7 @@ services:
     # Environment variables
     environment:
       - NODE_ENV=production
-      # AI_DOCS_PATH: Use /app/ai if volume is mounted, or /app/data/structs-compendium for baked-in compendium
+      # AI_DOCS_PATH: Use /app/ai if volume is mounted, or /app/data/structs-ai for baked-in compendium
       # If volume is mounted above, keep this as /app/ai. Otherwise, remove this line to use the default.
       - AI_DOCS_PATH=/app/ai
       # Use host.docker.internal to access services on the host machine

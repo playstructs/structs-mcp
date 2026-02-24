@@ -72,46 +72,46 @@ export const queryHandlers = new Map([
     { isListTool: true }
   )],
 
-  // Query handlers (extract entity ID to exclude self-reference)
+  // Query handlers: accept entity-specific id (e.g. player_id) or generic "id" for compatibility
   ['structs_query_player', createHandler(
-    (args) => queryPlayer(args?.player_id as string),
-    { extractExcludeId: (args) => args?.player_id as string }
+    (args) => queryPlayer((args?.player_id ?? args?.id) as string),
+    { extractExcludeId: (args) => (args?.player_id ?? args?.id) as string }
   )],
   ['structs_query_planet', createHandler(
-    (args) => queryPlanet(args?.planet_id as string),
-    { extractExcludeId: (args) => args?.planet_id as string }
+    (args) => queryPlanet((args?.planet_id ?? args?.id) as string),
+    { extractExcludeId: (args) => (args?.planet_id ?? args?.id) as string }
   )],
   ['structs_query_guild', createHandler(
-    (args) => queryGuild(args?.guild_id as string),
-    { extractExcludeId: (args) => args?.guild_id as string }
+    (args) => queryGuild((args?.guild_id ?? args?.id) as string),
+    { extractExcludeId: (args) => (args?.guild_id ?? args?.id) as string }
   )],
   ['structs_query_fleet', createHandler(
-    (args) => queryFleet(args?.fleet_id as string),
-    { extractExcludeId: (args) => args?.fleet_id as string }
+    (args) => queryFleet((args?.fleet_id ?? args?.id) as string),
+    { extractExcludeId: (args) => (args?.fleet_id ?? args?.id) as string }
   )],
   ['structs_query_struct', createHandler(
-    (args) => queryStruct(args?.struct_id as string),
-    { extractExcludeId: (args) => args?.struct_id as string }
+    (args) => queryStruct((args?.struct_id ?? args?.id) as string),
+    { extractExcludeId: (args) => (args?.struct_id ?? args?.id) as string }
   )],
   ['structs_query_reactor', createHandler(
-    (args) => queryReactor(args?.reactor_id as string),
-    { extractExcludeId: (args) => args?.reactor_id as string }
+    (args) => queryReactor((args?.reactor_id ?? args?.id) as string),
+    { extractExcludeId: (args) => (args?.reactor_id ?? args?.id) as string }
   )],
   ['structs_query_substation', createHandler(
-    (args) => querySubstation(args?.substation_id as string),
-    { extractExcludeId: (args) => args?.substation_id as string }
+    (args) => querySubstation((args?.substation_id ?? args?.id) as string),
+    { extractExcludeId: (args) => (args?.substation_id ?? args?.id) as string }
   )],
   ['structs_query_provider', createHandler(
-    (args) => queryProvider(args?.provider_id as string),
-    { extractExcludeId: (args) => args?.provider_id as string }
+    (args) => queryProvider((args?.provider_id ?? args?.id) as string),
+    { extractExcludeId: (args) => (args?.provider_id ?? args?.id) as string }
   )],
   ['structs_query_agreement', createHandler(
-    (args) => queryAgreement(args?.agreement_id as string),
-    { extractExcludeId: (args) => args?.agreement_id as string }
+    (args) => queryAgreement((args?.agreement_id ?? args?.id) as string),
+    { extractExcludeId: (args) => (args?.agreement_id ?? args?.id) as string }
   )],
   ['structs_query_allocation', createHandler(
-    (args) => queryAllocation(args?.allocation_id as string),
-    { extractExcludeId: (args) => args?.allocation_id as string }
+    (args) => queryAllocation((args?.allocation_id ?? args?.id) as string),
+    { extractExcludeId: (args) => (args?.allocation_id ?? args?.id) as string }
   )],
   ['structs_query_endpoints', createHandler(
     (args) => queryEndpoints(args?.entity_type as string | undefined, args?.category as string | undefined, aiDocsPath)

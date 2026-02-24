@@ -41,7 +41,7 @@ RUN apk add --no-cache git
 # Set environment variables with defaults
 ENV NODE_ENV=production
 # Default to baked-in compendium, but can be overridden via volume mount to /app/ai
-ENV AI_DOCS_PATH=/app/data/structs-compendium
+ENV AI_DOCS_PATH=/app/data/structs-ai
 ENV CONSENSUS_RPC_URL=http://structsd:26657
 ENV CONSENSUS_API_URL=http://structsd:1317
 ENV WEBAPP_API_URL=http://structs-webapp:8080

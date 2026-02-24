@@ -36,7 +36,11 @@ export function createQueryTool(
       properties: {
         [entityId]: {
           type: "string",
-          description: `${entityName} ID (e.g., '${entityIdPattern}')`,
+          description: `${entityName} ID in type-index format (e.g., '${entityIdPattern}'). Can also be passed as "id" for compatibility.`,
+        },
+        id: {
+          type: "string",
+          description: `Alias for ${entityId}. Entity ID in type-index format (e.g., '${entityIdPattern}'). Either this or ${entityId} must be provided.`,
         },
         include_references: {
           anyOf: [
@@ -77,6 +81,7 @@ export function createQueryTool(
           default: 2000,
         },
       },
+      // Either entity-specific id (e.g. player_id) or generic id must be provided
       required: [entityId],
     },
   };

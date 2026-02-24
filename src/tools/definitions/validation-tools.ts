@@ -37,7 +37,7 @@ export const validationTools: Tool[] = [
         },
         schema_uri: {
           type: "string",
-          description: "Schema resource URI (e.g., 'structs://schemas/entities/player.json'). Use structs_query_endpoints to find available schemas.",
+          description: "Schema resource URI (e.g., 'structs://schemas/entities/player.json' or 'structs://schemas/entities/player.md'). Compendium is Markdown-first (structs-ai); JSON Schema validation only applies to JSON schema resources. Use structs_query_endpoints to find available schemas.",
         },
       },
       required: ["data", "schema_uri"],

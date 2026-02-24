@@ -42,13 +42,13 @@ const ENTITY_TYPE_PREFIXES: Record<string, number> = {
 
 /**
  * Validate entity ID format
- * 
+ *
  * @param id - Entity ID to validate (e.g., "1-11")
  * @param expectedType - Optional expected entity type
  * @returns Validation result
  */
 export function validateEntityId(
-  id: string,
+  id: string | undefined | null,
   expectedType?: string
 ): {
   valid: boolean;
@@ -58,31 +58,41 @@ export function validateEntityId(
   format?: string;
   error?: string;
 } {
-  // Check format
-  const match = id.match(ENTITY_ID_REGEX);
+  if (id === undefined || id === null || typeof id !== 'string') {
+    return {
+      valid: false,
+      error: 'Entity ID is required and must be a string (e.g., "1-11" for player, "2-1" for planet). Use the entity-specific parameter: player_id, planet_id, fleet_id, guild_id, struct_id, reactor_id, substation_id, provider_id, agreement_id, or allocation_id.',
+    };
+  }
+  const trimmed = id.trim();
+  if (!trimmed) {
+    return {
+      valid: false,
+      error: 'Entity ID cannot be empty.',
+    };
+  }
+  const match = trimmed.match(ENTITY_ID_REGEX);
   if (!match) {
     return {
       valid: false,
-      error: `Invalid entity ID format. Expected format: {chain_id}-{index}, got: ${id}`,
+      error: `Invalid entity ID format. Expected format: {type}-{index} (e.g., 1-11, 2-1). Got: ${id}`,
     };
   }
 
   const chainId = parseInt(match[1], 10);
   const index = parseInt(match[2], 10);
 
-  // Determine entity type from chain ID
   const type = Object.keys(ENTITY_TYPE_PREFIXES).find(
     (key) => ENTITY_TYPE_PREFIXES[key] === chainId
   ) || 'unknown';
 
-  // Check expected type if provided
   if (expectedType && type !== expectedType) {
     return {
       valid: false,
       type,
       chainId,
       index,
-      format: id,
+      format: trimmed,
       error: `Entity type mismatch. Expected: ${expectedType}, got: ${type}`,
     };
   }
@@ -92,7 +102,7 @@ export function validateEntityId(
     type,
     chainId,
     index,
-    format: id,
+    format: trimmed,
   };
 }
 
@@ -128,17 +138,30 @@ export async function validateSchema(
       };
     }
 
-    // Parse schema
+    const resourceWithText = schemaResource as { text?: string; mimeType?: string };
+    if (!resourceWithText.text) {
+      return {
+        valid: false,
+        errors: [],
+        error: 'Schema resource has no text content',
+      };
+    }
+
+    // Compendium is now Markdown-first (structs-ai). If the resource is Markdown, we cannot run JSON Schema validation.
+    const isMarkdown =
+      resourceWithText.mimeType === 'text/markdown' ||
+      resourceWithText.text.trim().startsWith('#') ||
+      (resourceWithText.text.includes('|') && resourceWithText.text.includes('---'));
+    if (isMarkdown) {
+      return {
+        valid: false,
+        errors: [],
+        error: `Schema resource is in Markdown format (structs-ai compendium). JSON Schema validation is not available; use the resource for reference only. URI: ${schemaUri}`,
+      };
+    }
+
     let schema: unknown;
     try {
-      const resourceWithText = schemaResource as { text?: string };
-      if (!resourceWithText.text) {
-        return {
-          valid: false,
-          errors: [],
-          error: 'Schema resource has no text content',
-        };
-      }
       schema = JSON.parse(resourceWithText.text);
     } catch (error) {
       return {

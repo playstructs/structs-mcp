@@ -105,14 +105,14 @@ The following environment variables can be set:
 
 ```env
 # Resource Path (optional)
-# By default, the server will clone the Structs Compendium into the AI docs
-# directory (inside the container this is /app/ai by default). Set AI_DOCS_PATH
-# if you want to point at a mounted directory instead.
+# By default, the server clones the structs-ai compendium into the AI docs
+# directory (e.g. /app/ai or /app/data/structs-ai). Set AI_DOCS_PATH to use
+# a mounted directory instead.
 AI_DOCS_PATH=/app/ai
 
-# Structs Compendium Repository (optional override)
-# Default (if unset): https://github.com/playstructs/structs-compendium.git
-STRUCTS_MCP_COMPENDIUM_REPO=https://github.com/playstructs/structs-compendium.git
+# Structs compendium repository (optional override)
+# Default (if unset): https://github.com/playstructs/structs-ai.git
+STRUCTS_MCP_COMPENDIUM_REPO=https://github.com/playstructs/structs-ai.git
 
 # API Endpoints (defaults provided)
 CONSENSUS_RPC_URL=http://localhost:26657
