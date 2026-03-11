@@ -16,7 +16,7 @@ export const config = {
   cacheMaxSize: 1000,
   logLevel: process.env.LOG_LEVEL || 'info',
   
-  // API Endpoints
+  // API Endpoints (defaults: localhost; for remote use without a local node, use reference node reactor.oh.energy — see README)
   consensusRPCUrl: process.env.CONSENSUS_RPC_URL || 'http://localhost:26657',
   consensusApiUrl: process.env.CONSENSUS_API_URL || 'http://localhost:1317',
   webappApiUrl: process.env.WEBAPP_API_URL || 'http://localhost:8080',

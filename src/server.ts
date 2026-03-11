@@ -15,8 +15,11 @@ import {
   ReadResourceRequestSchema,
   ListToolsRequestSchema,
   CallToolRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { getResource, listResources, getResourceMimeType } from "./resources/index.js";
+import { listPrompts, getPrompt } from "./prompts/index.js";
 import { config } from "./config.js";
 import { ensureCompendiumPresent } from "./utils/compendium.js";
 // Tool definitions and handlers are now modular
@@ -99,6 +102,20 @@ async function main() {
     return await handler(args);
   });
   console.error("✅ Tool call handler registered");
+
+  // Prompts (structs.ai workflows)
+  server.setRequestHandler(ListPromptsRequestSchema, async () => {
+    return { prompts: listPrompts() };
+  });
+  server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    const result = getPrompt(name, args);
+    if (!result) {
+      throw new Error(`Unknown prompt: ${name}`);
+    }
+    return result;
+  });
+  console.error("✅ Prompt handlers registered");
 
   // Phase 3: API Integration Tools - ✅ COMPLETE
   // Phase 4: Calculation Tools - ✅ COMPLETE

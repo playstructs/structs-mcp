@@ -58,7 +58,7 @@ export function uriToFilePath(
     return null;
   }
   
-  // Map category to directory
+  // Map category to directory (aligns with structs-ai layout)
   const categoryMap: Record<string, string> = {
     schemas: 'schemas',
     api: 'api',
@@ -68,10 +68,15 @@ export function uriToFilePath(
     patterns: 'patterns',
     visuals: 'visuals',
     guides: '', // Guides are in root of /ai
+    identity: 'identity',
+    skills: 'skills',
+    knowledge: 'knowledge',
+    playbooks: 'playbooks',
+    awareness: 'awareness',
   };
-  
+
   const categoryDir = categoryMap[parsed.category];
-  if (!categoryDir && parsed.category !== 'guides') {
+  if (categoryDir === undefined && parsed.category !== 'guides') {
     return null;
   }
   

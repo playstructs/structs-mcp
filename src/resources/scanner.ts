@@ -12,7 +12,7 @@ import { existsSync } from 'fs';
 import { parseResourceURI } from '../utils/uri.js';
 
 /**
- * Category to directory mapping
+ * Category to directory mapping (aligns with structs-ai layout)
  */
 const categoryMap: Record<string, string> = {
   schemas: 'schemas',
@@ -23,6 +23,12 @@ const categoryMap: Record<string, string> = {
   patterns: 'patterns',
   visuals: 'visuals',
   guides: '', // Guides are in root
+  // structs-ai top-level categories
+  identity: 'identity',
+  skills: 'skills',
+  knowledge: 'knowledge',
+  playbooks: 'playbooks',
+  awareness: 'awareness',
 };
 
 /**
@@ -98,13 +104,16 @@ async function scanGuides(aiDocsPath: string): Promise<string[]> {
     const entries = await readdir(aiDocsPath, { withFileTypes: true });
     
     for (const entry of entries) {
-      if (entry.isFile() && entry.name.endsWith('.md')) {
+      if (!entry.isFile()) continue;
+      if (entry.name.endsWith('.md')) {
         // Check if it's a guide file (uppercase, ends with .md)
         const isGuide = /^[A-Z_]+\.md$/.test(entry.name);
         if (isGuide) {
-          const uri = `structs://guides/${entry.name}`;
-          resources.push(uri);
+          resources.push(`structs://guides/${entry.name}`);
         }
+      } else if (entry.name.endsWith('.txt')) {
+        // Root .txt (e.g. llms.txt from structs-ai) served as structs://guides/<name>
+        resources.push(`structs://guides/${entry.name}`);
       }
     }
   } catch (error) {

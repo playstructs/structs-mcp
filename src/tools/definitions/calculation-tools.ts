@@ -100,7 +100,7 @@ export const calculationTools: Tool[] = [
   },
   {
     name: "structs_calculate_proof_of_work",
-    description: "Complete an action that requires proof-of-work (like finishing a struct build, completing mining, or finishing a raid). This starts the work in the background and automatically submits the transaction when done. Returns a job ID immediately so you can check status later.",
+    description: "Initiate or complete a proof-of-work action (struct build complete, ore miner/refinery complete, planet raid complete). Initiate early and compute later: start the job as soon as you know you need it; the actual hash runs in the background. Computing at low difficulty (e.g. D=3) minimizes CPU; difficulty is derived from operation age. Returns a job ID immediately; use structs_query_proof_of_work_status to check status. Transaction is submitted automatically when done.",
     inputSchema: {
       type: "object",
       properties: {
@@ -134,7 +134,7 @@ export const calculationTools: Tool[] = [
   },
   {
     name: "structs_query_proof_of_work_status",
-    description: "Check the status of a proof-of-work job. Use the job ID returned when you started the job.",
+    description: "Check the status of a proof-of-work job. Use the job ID from structs_calculate_proof_of_work. Prefer initiating PoW early and polling status before computing so difficulty stays low (e.g. D=3).",
     inputSchema: {
       type: "object",
       properties: {

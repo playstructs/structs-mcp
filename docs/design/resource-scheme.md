@@ -145,7 +145,63 @@ This document specifies the resource URI scheme for accessing Structs AI documen
 
 ---
 
-### 9. Formulas (`formulas`) - Future
+### 9. Identity (`identity`)
+
+**Purpose**: Identity and account documentation (structs-ai layout)
+
+**Examples**:
+- `structs://identity/...`
+
+**Mapping**: Direct mapping from `ai/identity/` directory
+
+---
+
+### 10. Skills (`skills`)
+
+**Purpose**: Skill definitions and instructions (structs-ai layout)
+
+**Examples**:
+- `structs://skills/...`
+
+**Mapping**: Direct mapping from `ai/skills/` directory (or `.cursor/skills/` if that is the canonical path in structs-ai)
+
+---
+
+### 11. Knowledge (`knowledge`)
+
+**Purpose**: Knowledge-base content (structs-ai layout)
+
+**Examples**:
+- `structs://knowledge/...`
+
+**Mapping**: Direct mapping from `ai/knowledge/` directory
+
+---
+
+### 12. Playbooks (`playbooks`)
+
+**Purpose**: Playbook documentation (structs-ai layout)
+
+**Examples**:
+- `structs://playbooks/...`
+
+**Mapping**: Direct mapping from `ai/playbooks/` directory
+
+---
+
+### 13. Awareness (`awareness`)
+
+**Purpose**: Awareness docs (e.g. async-operations, state-assessment) (structs-ai layout)
+
+**Examples**:
+- `structs://awareness/async-operations.md`
+- `structs://awareness/state-assessment.md`
+
+**Mapping**: Direct mapping from `ai/awareness/` directory
+
+---
+
+### 14. Formulas (`formulas`) - Future
 
 **Purpose**: Formula definitions (future - may be extracted from schemas)
 
@@ -242,6 +298,10 @@ This document specifies the resource URI scheme for accessing Structs AI documen
 ---
 
 ## Resource Discovery
+
+**List all resources**: Use MCP `resources/list` to get the full list of URIs. To reduce context size, clients can filter the returned list by URI prefix, e.g. only `structs://knowledge/*`, `structs://awareness/*`, or `structs://schemas/*`, depending on what the agent needs.
+
+**Tool discovery**: Call `structs_query_endpoints` (optionally with `entity_type` or `category`) to get a minimal tool index: tool name, category, entity type, one-line description. Use this before loading full tool schemas to choose which tools to call.
 
 **Index Resource**: `structs://reference/documentation-index.json`
 
