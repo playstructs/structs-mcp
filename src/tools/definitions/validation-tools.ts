@@ -19,8 +19,8 @@ export const validationTools: Tool[] = [
         },
         expected_type: {
           type: "string",
-          description: "Optionally verify the ID matches this entity type (player, planet, struct, guild)",
-          enum: ["player", "planet", "struct", "guild"],
+          description: "Optionally verify the ID matches this entity type",
+          enum: ["player", "planet", "struct", "guild", "fleet", "reactor", "substation", "provider", "agreement", "allocation", "struct_type", "permission"],
         },
       },
       required: ["id"],

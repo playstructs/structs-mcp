@@ -194,91 +194,198 @@ export async function calculateCost(
 }
 
 /**
- * Calculate combat damage
- * 
- * Simplified damage calculation. Actual game uses multi-shot system with success rates.
- * 
- * @param args - Calculation arguments
- * @param aiDocsPath - Path to /ai directory
- * @returns Damage calculation result
+ * v0.15.0 Combat Damage Estimator
+ *
+ * Per-projectile resolution matching the on-chain combat engine.
+ * This is a probabilistic ESTIMATE -- actual results depend on block hash
+ * and player nonce. See https://structs.ai/knowledge/mechanics/combat
+ *
+ * Resolution order per target:
+ *   For each projectile:
+ *     1. Defender counter-attack (once per invocation, fires even on evaded shots)
+ *     2. Evasion check (per-target: entire volley evaded or not)
+ *     3. Block attempt (only if NOT evaded, weapon blockable, defender in same ambit)
+ *     4. Damage (per-shot success rate, damage reduction, min damage 1)
+ *   After all targets:
+ *     5. Target counter-attack (once per invocation, only if target alive)
+ *     6. Recoil damage to attacker
+ *     7. PDC auto-fire
  */
 export async function calculateDamage(
   args: {
     attacker: {
       struct_type?: number;
-      weapon_type?: string;
-      power?: number;
       weapon_shots?: number;
       weapon_damage?: number;
       weapon_success_rate?: { numerator: number; denominator: number };
+      weapon_blockable?: boolean;
+      weapon_control?: 'guided' | 'unguided';
+      weapon_recoil_damage?: number;
+      health?: number;
     };
-    defender: {
+    target: {
       struct_type?: number;
-      armor?: number;
-      defense?: number;
       health?: number;
       damage_reduction?: number;
+      defense_type?: 'signal_jamming' | 'defensive_maneuver' | 'armour' | 'stealth' | 'indirect_combat' | 'none';
+      evasion_rate?: { numerator: number; denominator: number };
     };
+    defender?: {
+      struct_type?: number;
+      health?: number;
+      counter_attack_damage?: number;
+      blocking_success_rate?: { numerator: number; denominator: number };
+      same_ambit_as_target?: boolean;
+      same_ambit_as_attacker?: boolean;
+    };
+    pdc_damage?: number;
   },
-  aiDocsPath: string
+  _aiDocsPath: string
 ): Promise<{
-  damage: number;
+  expected_damage: number;
+  shots: Array<{
+    shot: number;
+    hit: boolean;
+    evaded: boolean;
+    blocked: boolean;
+    damage: number;
+  }>;
+  target_health_after: number;
+  attacker_health_after?: number;
+  counter_attack_damage_taken: number;
+  recoil_damage: number;
+  pdc_damage: number;
   formula: string;
-  breakdown: {
-    base_damage: number;
-    armor_reduction: number;
-    final_damage: number;
-  };
-  target_health_after?: number;
+  notes: string[];
 }> {
-  const { attacker, defender } = args;
+  const { attacker, target, defender, pdc_damage: pdcInput } = args;
+  const notes: string[] = [];
 
-  // Load damage formula from schemas
-  let damageFormula: any = null;
-  try {
-    const formulasResource = await getResource(
-      'structs://schemas/formulas.json',
-      aiDocsPath
-    );
-    
-    if (formulasResource && typeof formulasResource === 'object' && 'content' in formulasResource) {
-      const formulas = JSON.parse(formulasResource.content as string);
-      damageFormula = formulas.formulas?.battle?.['damage-calculation'];
+  const weaponShots = attacker.weapon_shots ?? 1;
+  const weaponDamage = attacker.weapon_damage ?? 1;
+  const successRate = attacker.weapon_success_rate ?? { numerator: 1, denominator: 1 };
+  const damageReduction = target.damage_reduction ?? 0;
+  const targetHealth = target.health ?? 3;
+  const blockable = attacker.weapon_blockable !== false;
+  const weaponControl = attacker.weapon_control ?? 'guided';
+  const recoilDmg = attacker.weapon_recoil_damage ?? 0;
+
+  // Evasion probability based on weapon control vs defense type
+  let evasionProb = 0;
+  const defType = target.defense_type ?? 'none';
+  if (defType === 'signal_jamming' && weaponControl === 'guided') {
+    evasionProb = 2 / 3;
+    notes.push('Signal Jamming vs guided: 66% miss rate.');
+  } else if (defType === 'defensive_maneuver' && weaponControl === 'unguided') {
+    evasionProb = 2 / 3;
+    notes.push('Defensive Maneuver vs unguided: 66% miss rate.');
+  } else if (target.evasion_rate && target.evasion_rate.denominator > 0) {
+    evasionProb = target.evasion_rate.numerator / target.evasion_rate.denominator;
+  }
+
+  const isArmour = defType === 'armour';
+  if (isArmour) {
+    notes.push('Armour: -1 damage per hit regardless of weapon control.');
+  }
+
+  // Blocking probability
+  let blockProb = 0;
+  if (defender && defender.blocking_success_rate && blockable && defender.same_ambit_as_target !== false) {
+    blockProb = defender.blocking_success_rate.numerator / defender.blocking_success_rate.denominator;
+  }
+
+  // Shot success probability
+  const hitProb = successRate.denominator > 0 ? successRate.numerator / successRate.denominator : 1;
+
+  // Counter-attack damage
+  let counterDmgTotal = 0;
+  if (defender?.counter_attack_damage) {
+    const caDmg = defender.same_ambit_as_attacker !== false
+      ? defender.counter_attack_damage
+      : Math.floor(defender.counter_attack_damage / 2);
+    counterDmgTotal += caDmg;
+    notes.push(`Defender counter-attack: ${caDmg} damage (once, fires before block on first shot).`);
+  }
+
+  // Per-projectile resolution (expected values)
+  const evaded = evasionProb >= 0.5;
+  if (evaded && evasionProb > 0) {
+    notes.push(`Evasion likely (${(evasionProb * 100).toFixed(0)}%). Showing evaded outcome.`);
+  }
+
+  const shots: Array<{ shot: number; hit: boolean; evaded: boolean; blocked: boolean; damage: number }> = [];
+  let totalDamage = 0;
+  let runningHealth = targetHealth;
+
+  for (let i = 0; i < weaponShots; i++) {
+    if (runningHealth <= 0) {
+      shots.push({ shot: i + 1, hit: false, evaded: false, blocked: false, damage: 0 });
+      notes.push(`Shot ${i + 1}: target already destroyed.`);
+      continue;
     }
-  } catch (error) {
-    // Fall back to simplified calculation
+
+    if (evaded) {
+      shots.push({ shot: i + 1, hit: false, evaded: true, blocked: false, damage: 0 });
+      continue;
+    }
+
+    // Block attempt (per shot, only if not evaded)
+    const blocked = blockProb > 0.5;
+    if (blocked) {
+      shots.push({ shot: i + 1, hit: false, evaded: false, blocked: true, damage: 0 });
+      continue;
+    }
+
+    // Hit check
+    const hit = hitProb >= 0.5;
+    if (!hit) {
+      shots.push({ shot: i + 1, hit: false, evaded: false, blocked: false, damage: 0 });
+      continue;
+    }
+
+    // Damage calculation with reduction and armour
+    let shotDamage = weaponDamage - damageReduction;
+    if (isArmour) shotDamage -= 1;
+    shotDamage = Math.max(1, shotDamage);
+
+    const applied = Math.min(shotDamage, runningHealth);
+    runningHealth -= applied;
+    totalDamage += applied;
+    shots.push({ shot: i + 1, hit: true, evaded: false, blocked: false, damage: applied });
   }
 
-  // Simplified damage calculation
-  // Base damage from weapon power or weapon damage
-  const baseDamage = attacker.weapon_damage || attacker.power || 100;
-  
-  // Apply multi-shot system if weapon_shots and success_rate provided
-  let totalDamage = baseDamage;
-  if (attacker.weapon_shots && attacker.weapon_success_rate) {
-    // Simplified: assume all shots hit (actual game uses probability)
-    // For accurate calculation, would need to simulate each shot
-    totalDamage = baseDamage * attacker.weapon_shots;
+  // Target counter-attack (after all shots, only if alive)
+  if (runningHealth > 0) {
+    notes.push('Target survives -- would counter-attack once (damage depends on target struct type).');
   }
 
-  // Damage reduction from armor/defense
-  const armorReduction = defender.damage_reduction || defender.armor || 0;
-  const finalDamage = Math.max(0, totalDamage - armorReduction);
+  // Recoil
+  let attackerHealth = attacker.health;
+  if (recoilDmg > 0) {
+    notes.push(`Recoil: attacker takes ${recoilDmg} damage after firing.`);
+  }
+  if (attackerHealth !== undefined) {
+    attackerHealth = Math.max(0, attackerHealth - counterDmgTotal - recoilDmg - (pdcInput ?? 0));
+  }
 
-  // Calculate target health after damage
-  const targetHealthAfter = defender.health !== undefined
-    ? Math.max(0, defender.health - finalDamage)
-    : undefined;
+  // PDC
+  const pdcDmg = pdcInput ?? 0;
+  if (pdcDmg > 0) {
+    notes.push(`PDC auto-fire: ${pdcDmg} damage to attacker after all targets resolved.`);
+  }
+
+  notes.push('This is a probabilistic estimate. Actual combat uses on-chain hash-based RNG.');
 
   return {
-    damage: finalDamage,
-    formula: damageFormula?.formula || 'damage = (weapon_power * weapon_multiplier) - (armor * defense_multiplier)',
-    breakdown: {
-      base_damage: totalDamage,
-      armor_reduction: armorReduction,
-      final_damage: finalDamage,
-    },
-    target_health_after: targetHealthAfter,
+    expected_damage: totalDamage,
+    shots,
+    target_health_after: runningHealth,
+    attacker_health_after: attackerHealth,
+    counter_attack_damage_taken: counterDmgTotal,
+    recoil_damage: recoilDmg,
+    pdc_damage: pdcDmg,
+    formula: 'Per-projectile: for each shot, check evasion → block → hit(successRate) → damage = max(1, weaponDamage - reduction). Min damage 1 per hit.',
+    notes,
   };
 }
 

@@ -12,7 +12,9 @@ import { actionHandlers } from './action-handlers.js';
 import { calculationHandlers } from './calculation-handlers.js';
 import { workflowHandlers } from './workflow-handlers.js';
 import { errorLookupHandlers } from './error-lookup-handlers.js';
-import { gameplayHandlers } from './gameplay-handlers.js';
+import { commandHandlers } from './command-handlers.js';
+import { dashboardHandlers } from './dashboard-handlers.js';
+import { preflightHandlers } from './preflight-handlers.js';
 
 // Combine all handlers into a single map
 const allHandlers = new Map([
@@ -22,7 +24,9 @@ const allHandlers = new Map([
   ...calculationHandlers,
   ...workflowHandlers,
   ...errorLookupHandlers,
-  ...gameplayHandlers,
+  ...commandHandlers,
+  ...dashboardHandlers,
+  ...preflightHandlers,
 ]);
 
 /**
@@ -78,5 +82,7 @@ export {
   calculationHandlers,
   workflowHandlers,
   errorLookupHandlers,
-  gameplayHandlers,
+  commandHandlers,
+  dashboardHandlers,
+  preflightHandlers,
 };

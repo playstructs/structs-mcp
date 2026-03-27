@@ -20,7 +20,11 @@ export type ToolCategory =
   | 'validation'
   | 'workflow'
   | 'error_lookup'
-  | 'gameplay';
+  | 'gameplay'
+  | 'command'
+  | 'dashboard'
+  | 'preflight'
+  | 'diagnosis';
 
 /**
  * Entity types that tools operate on
@@ -37,6 +41,7 @@ export type EntityType =
   | 'agreement'
   | 'allocation'
   | 'struct_type'
+  | 'permission'
   | 'none'; // For tools that don't operate on a specific entity
 
 /**
@@ -59,6 +64,10 @@ export interface ToolMetadata {
  * Extract category from tool name
  */
 function extractCategory(toolName: string): ToolCategory {
+  if (toolName === 'structs_prepare_command') return 'command';
+  if (toolName === 'structs_player_dashboard') return 'dashboard';
+  if (toolName === 'structs_preflight_check') return 'preflight';
+  if (toolName === 'structs_diagnose_error') return 'diagnosis';
   if (toolName.startsWith('structs_query_')) return 'query';
   if (toolName.startsWith('structs_list_')) return 'query';
   if (toolName.startsWith('structs_action_')) return 'action';
@@ -67,7 +76,7 @@ function extractCategory(toolName: string): ToolCategory {
   if (toolName.startsWith('structs_workflow_')) return 'workflow';
   if (toolName.startsWith('structs_lookup_')) return 'error_lookup';
   if (toolName.startsWith('structs_validate_gameplay_')) return 'gameplay';
-  return 'query'; // Default fallback
+  return 'query';
 }
 
 /**
@@ -216,7 +225,7 @@ export function getToolMetadata(toolName: string): ToolMetadata | undefined {
  * Get all available categories
  */
 export function getCategories(): ToolCategory[] {
-  return ['query', 'action', 'calculation', 'validation', 'workflow', 'error_lookup', 'gameplay'];
+  return ['query', 'action', 'calculation', 'validation', 'workflow', 'error_lookup', 'gameplay', 'command', 'dashboard', 'preflight', 'diagnosis'];
 }
 
 /**
@@ -235,6 +244,7 @@ export function getEntityTypes(): EntityType[] {
     'agreement',
     'allocation',
     'struct_type',
+    'permission',
     'none',
   ];
 }

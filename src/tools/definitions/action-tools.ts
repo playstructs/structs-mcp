@@ -9,14 +9,38 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 export const actionTools: Tool[] = [
   {
     name: "structs_action_submit_transaction",
-    description: "Perform an action in the game (like exploring, building a struct, moving a fleet, or joining a guild). The transaction will be signed and submitted automatically.",
+    description: "Perform a game action via the signer DB (requires DANGER=true). For generating CLI commands without signer access, use structs_prepare_command instead.",
     inputSchema: {
       type: "object",
       properties: {
         action: {
           type: "string",
-          description: "What action to perform: 'explore' (explore a planet), 'struct_build_initiate' (start building a struct), 'struct_build_complete' (finish building a struct), 'fleet_move' (move a fleet), 'guild_membership_join' (join a guild), 'guild_membership_leave' (leave a guild), 'reactor-infuse' (infuse reactor with Alpha Matter, also handles validation delegation), 'reactor-defuse' (defuse reactor, also handles validation undelegation), 'reactor-begin-migration' (begin redelegation process), or 'reactor-cancel-defusion' (cancel undelegation process)",
-          enum: ["explore", "struct_build_initiate", "struct_build_complete", "fleet_move", "guild_membership_join", "guild_membership_leave", "reactor-infuse", "reactor-defuse", "reactor-begin-migration", "reactor-cancel-defusion"],
+          description: "Action to perform. Deprecated actions return an error with the replacement. Use structs_prepare_command to see all actions.",
+          enum: [
+            "explore", "planet-explore",
+            "struct_build_initiate", "struct-build-initiate", "struct_build_complete", "struct-build-complete",
+            "struct-activate", "struct-deactivate", "struct-attack", "struct-move",
+            "struct-defense-set", "struct-defense-clear", "struct-stealth-activate", "struct-stealth-deactivate",
+            "struct-generator-infuse",
+            "planet_raid_complete", "planet-raid-complete",
+            "ore_miner_complete", "struct-ore-miner-complete", "ore_refinery_complete", "struct-ore-refinery-complete",
+            "fleet_move", "fleet-move",
+            "guild-create", "guild-update-entry-rank",
+            "guild_membership_join", "guild-membership-join", "guild-membership-kick",
+            "guild-bank-mint", "guild-bank-redeem",
+            "player-update-guild-rank", "player-send",
+            "reactor-infuse", "reactor-defuse", "reactor-begin-migration", "reactor-cancel-defusion",
+            "permission-grant-on-object", "permission-revoke-on-object", "permission-set-on-object",
+            "permission-grant-on-address", "permission-revoke-on-address", "permission-set-on-address",
+            "permission-guild-rank-set", "permission-guild-rank-revoke",
+            "allocation-create", "allocation-update", "allocation-delete", "allocation-transfer",
+            "substation-create", "substation-delete",
+            "substation-player-connect", "substation-player-disconnect", "substation-player-migrate",
+            "substation-allocation-connect", "substation-allocation-disconnect",
+            "provider-create", "provider-delete", "provider-withdraw-balance",
+            "agreement-open", "agreement-close",
+            "address-register", "player-update-primary-address"
+          ],
         },
         player_id: {
           type: "string",
@@ -28,7 +52,7 @@ export const actionTools: Tool[] = [
           properties: {
             struct_type_id: {
               type: "number",
-              description: "The type of struct to build (e.g., 14 for Command Ship). Use structs_list_struct_types to see available types (for struct_build_initiate)",
+              description: "The type of struct to build (e.g., 1 for Command Ship, 14 for Ore Extractor, 15 for Ore Refinery). Use structs_list_struct_types to see available types (for struct_build_initiate)",
             },
             operate_ambit: {
               type: "string",
@@ -94,94 +118,6 @@ export const actionTools: Tool[] = [
         },
       },
       required: ["username", "guild_id"],
-    },
-  },
-  {
-    name: "structs_action_build_struct",
-    description: "Build a struct from start to finish. This handles the entire process: starting the build, waiting for it to be ready, calculating proof-of-work, and completing it automatically.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        struct_type_id: {
-          type: "number",
-          description: "The type of struct to build (e.g., 14 for Command Ship). Use structs_list_struct_types to see available types",
-        },
-        operate_ambit: {
-          type: "string",
-          description: "Where the struct will operate: 'space', 'air', 'land', or 'water'",
-        },
-        slot: {
-          type: "number",
-          description: "Which slot to build in (0-3). Each planet has 4 slots per ambit",
-        },
-        player_id: {
-          type: "string",
-          description: "Player ID (e.g., '1-11')",
-        },
-      },
-      required: ["struct_type_id", "operate_ambit", "slot", "player_id"],
-    },
-  },
-  {
-    name: "structs_action_activate_struct",
-    description: "Activate a struct (turn it on). This checks that you have enough energy and charge before activating.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        struct_id: {
-          type: "string",
-          description: "Struct ID (e.g., '5-1')",
-        },
-        player_id: {
-          type: "string",
-          description: "Player ID (e.g., '1-11')",
-        },
-      },
-      required: ["struct_id", "player_id"],
-    },
-  },
-  {
-    name: "structs_action_attack",
-    description: "Attack another struct. This checks that the target is valid and in range before attacking.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        attacker_struct_id: {
-          type: "string",
-          description: "Attacker struct ID (e.g., '5-1')",
-        },
-        target_struct_id: {
-          type: "string",
-          description: "Target struct ID (e.g., '5-2')",
-        },
-        player_id: {
-          type: "string",
-          description: "Player ID (e.g., '1-11')",
-        },
-      },
-      required: ["attacker_struct_id", "target_struct_id", "player_id"],
-    },
-  },
-  {
-    name: "structs_action_move_fleet",
-    description: "Move a fleet to a different planet. This checks that your fleet has a command ship before moving.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        fleet_id: {
-          type: "string",
-          description: "Fleet ID (e.g., '3-1')",
-        },
-        destination_planet_id: {
-          type: "string",
-          description: "Destination planet ID (e.g., '2-1')",
-        },
-        player_id: {
-          type: "string",
-          description: "Player ID (e.g., '1-11')",
-        },
-      },
-      required: ["fleet_id", "destination_planet_id", "player_id"],
     },
   },
 ];

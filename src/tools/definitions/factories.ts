@@ -17,16 +17,16 @@ export function createQueryTool(
 ): Tool {
   const entityId = `${entityName.toLowerCase()}_id`;
   const descriptions: Record<string, string> = {
-    Player: "Get information about a player, including their resources, location, and owned entities",
+    Player: "Get information about a player, including their resources, location, owned entities, and guildRank (numeric rank within their guild, lower = more privileged)",
     Planet: "Get information about a planet, including its owner, resources, and structures",
-    Guild: "Get information about a guild, including its members, resources, and structures",
+    Guild: "Get information about a guild, including its members, resources, structures, and entryRank (default rank assigned to new members)",
     Fleet: "Get information about a fleet, including its owner, location, and ships",
     Struct: "Get information about a struct, including its owner, location, and status",
-    Reactor: "Get information about a reactor, including its owner and power generation",
+    Reactor: "Get information about a reactor, including its owner (PlayerId), power generation, and validator delegation state",
     Substation: "Get information about a substation, including its owner and connections",
     Provider: "Get information about a provider",
     Agreement: "Get information about an agreement",
-    Allocation: "Get information about an allocation",
+    Allocation: "Get information about an allocation. The controller field is a PlayerId (not address). The locked column has been removed.",
   };
   return {
     name: `structs_query_${entityName.toLowerCase()}`,

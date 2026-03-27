@@ -12,8 +12,11 @@ import { queryTools } from './query-tools.js';
 import { actionTools } from './action-tools.js';
 import { calculationTools } from './calculation-tools.js';
 import { workflowTools } from './workflow-tools.js';
-import { errorLookupTools } from './error-lookup-tools.js';
 import { gameplayTools } from './gameplay-tools.js';
+import { commandTools } from './command-tools.js';
+import { dashboardTools } from './dashboard-tools.js';
+import { preflightTools } from './preflight-tools.js';
+import { diagnosisTools } from './diagnosis-tools.js';
 
 // Cache for tool definitions
 let cachedToolDefinitions: Tool[] | null = null;
@@ -29,8 +32,11 @@ export function getAllToolDefinitions(): Tool[] {
       ...actionTools,
       ...calculationTools,
       ...workflowTools,
-      ...errorLookupTools,
       ...gameplayTools,
+      ...commandTools,
+      ...dashboardTools,
+      ...preflightTools,
+      ...diagnosisTools,
     ];
   }
   return cachedToolDefinitions;
@@ -44,4 +50,4 @@ export function clearToolDefinitionsCache(): void {
 }
 
 // Re-export for convenience
-export { validationTools, queryTools, actionTools, calculationTools, workflowTools, errorLookupTools, gameplayTools };
+export { validationTools, queryTools, actionTools, calculationTools, workflowTools, gameplayTools, commandTools, dashboardTools, preflightTools, diagnosisTools };

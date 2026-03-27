@@ -40,27 +40,94 @@ export async function submitTransaction(
     // Map action names to signer.tx_* function names
     const functionMap: Record<string, string> = {
       'explore': 'tx_explore',
+      'planet-explore': 'tx_explore',
       'struct_build_initiate': 'tx_struct_build_initiate',
+      'struct-build-initiate': 'tx_struct_build_initiate',
       'struct_build_complete': 'tx_struct_build_complete',
+      'struct-build-complete': 'tx_struct_build_complete',
+      'struct-activate': 'tx_struct_activate',
+      'struct-deactivate': 'tx_struct_deactivate',
+      'struct-attack': 'tx_struct_attack',
+      'struct-move': 'tx_struct_move',
+      'struct-defense-set': 'tx_struct_defense_set',
+      'struct-defense-clear': 'tx_struct_defense_clear',
+      'struct-stealth-activate': 'tx_struct_stealth_activate',
+      'struct-stealth-deactivate': 'tx_struct_stealth_deactivate',
+      'struct-generator-infuse': 'tx_struct_generator_infuse',
       'planet_raid_complete': 'tx_planet_raid_complete',
+      'planet-raid-complete': 'tx_planet_raid_complete',
       'ore_miner_complete': 'tx_struct_ore_mine_complete',
+      'struct-ore-miner-complete': 'tx_struct_ore_mine_complete',
       'ore_refinery_complete': 'tx_struct_ore_refine_complete',
+      'struct-ore-refinery-complete': 'tx_struct_ore_refine_complete',
       'fleet_move': 'tx_fleet_move',
+      'fleet-move': 'tx_fleet_move',
+      'guild-create': 'tx_guild_create',
+      'guild-update-entry-rank': 'tx_guild_update_entry_rank',
       'guild_membership_join': 'tx_guild_membership_join',
-      'guild_membership_leave': 'tx_guild_membership_leave',
+      'guild-membership-join': 'tx_guild_membership_join',
+      'guild-membership-kick': 'tx_guild_membership_kick',
+      'guild-bank-mint': 'tx_guild_bank_mint',
+      'guild-bank-redeem': 'tx_guild_bank_redeem',
+      'player-update-guild-rank': 'tx_player_update_guild_rank',
+      'player-send': 'tx_player_send',
       'reactor-infuse': 'tx_reactor_infuse',
       'reactor-defuse': 'tx_reactor_defuse',
       'reactor-begin-migration': 'tx_reactor_begin_migration',
       'reactor-cancel-defusion': 'tx_reactor_cancel_defusion',
-      // Add more mappings as needed
+      'permission-grant-on-object': 'tx_permission_grant_on_object',
+      'permission-revoke-on-object': 'tx_permission_revoke_on_object',
+      'permission-set-on-object': 'tx_permission_set_on_object',
+      'permission-grant-on-address': 'tx_permission_grant_on_address',
+      'permission-revoke-on-address': 'tx_permission_revoke_on_address',
+      'permission-set-on-address': 'tx_permission_set_on_address',
+      'permission-guild-rank-set': 'tx_permission_guild_rank_set',
+      'permission-guild-rank-revoke': 'tx_permission_guild_rank_revoke',
+      'allocation-create': 'tx_allocation_create',
+      'allocation-update': 'tx_allocation_update',
+      'allocation-delete': 'tx_allocation_delete',
+      'allocation-transfer': 'tx_allocation_transfer',
+      'substation-create': 'tx_substation_create',
+      'substation-delete': 'tx_substation_delete',
+      'substation-player-connect': 'tx_substation_player_connect',
+      'substation-player-disconnect': 'tx_substation_player_disconnect',
+      'substation-player-migrate': 'tx_substation_player_migrate',
+      'substation-allocation-connect': 'tx_substation_allocation_connect',
+      'substation-allocation-disconnect': 'tx_substation_allocation_disconnect',
+      'provider-create': 'tx_provider_create',
+      'provider-delete': 'tx_provider_delete',
+      'provider-withdraw-balance': 'tx_provider_withdraw_balance',
+      'agreement-open': 'tx_agreement_open',
+      'agreement-close': 'tx_agreement_close',
+      'address-register': 'tx_address_register',
+      'player-update-primary-address': 'tx_player_update_primary_address',
     };
+
+    const deprecatedActions: Record<string, { replacement: string; reason: string }> = {
+      'guild_membership_leave': { replacement: 'guild-membership-kick', reason: 'MsgGuildMembershipLeave does not exist. Use guild-membership-kick.' },
+      'guild-membership-leave': { replacement: 'guild-membership-kick', reason: 'MsgGuildMembershipLeave does not exist. Use guild-membership-kick.' },
+      'agreement-create': { replacement: 'agreement-open', reason: 'Use agreement-open (MsgAgreementOpen) instead.' },
+      'provider-guild-grant': { replacement: 'permission-guild-rank-set', reason: 'Removed in v0.15.0. Use guild rank permissions.' },
+      'provider-guild-revoke': { replacement: 'permission-guild-rank-revoke', reason: 'Removed in v0.15.0. Use guild rank permissions.' },
+      'reactor-allocate': { replacement: 'allocation-create', reason: 'Use allocation system (MsgAllocationCreate).' },
+      'substation-connect': { replacement: 'substation-allocation-connect', reason: 'Use MsgSubstationAllocationConnect.' },
+    };
+
+    const dep = deprecatedActions[action];
+    if (dep) {
+      return {
+        status: 'error',
+        message: `Action "${action}" is deprecated. Use "${dep.replacement}" instead.`,
+        error: dep.reason,
+      };
+    }
 
     const functionName = functionMap[action];
     if (!functionName) {
       return {
         status: 'error',
         message: `Unknown action: ${action}`,
-        error: `Supported actions: ${Object.keys(functionMap).join(', ')}`,
+        error: `Supported actions: ${Object.keys(functionMap).filter(k => !deprecatedActions[k]).join(', ')}`,
       };
     }
 
@@ -194,11 +261,181 @@ export async function submitTransaction(
         params = [player_id, args.reactor_id];
         break;
 
+      case 'struct-activate':
+      case 'struct-deactivate':
+      case 'struct-defense-set':
+      case 'struct-defense-clear':
+      case 'struct-stealth-activate':
+      case 'struct-stealth-deactivate':
+        if (!args.struct_id) {
+          return { status: 'error', message: 'Missing required arguments', error: `${action} requires: struct_id` };
+        }
+        sql = `SELECT signer.${functionName}($1, $2) as result`;
+        params = [player_id, args.struct_id];
+        break;
+
+      case 'struct-attack':
+        if (!args.attacker_struct_id || !args.target_struct_id) {
+          return { status: 'error', message: 'Missing required arguments', error: 'struct-attack requires: attacker_struct_id, target_struct_id' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.attacker_struct_id, args.target_struct_id];
+        break;
+
+      case 'struct-move':
+        if (!args.struct_id || !args.destination) {
+          return { status: 'error', message: 'Missing required arguments', error: 'struct-move requires: struct_id, destination' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.struct_id, args.destination];
+        break;
+
+      case 'struct-generator-infuse':
+        if (!args.struct_id || !args.amount) {
+          return { status: 'error', message: 'Missing required arguments', error: 'struct-generator-infuse requires: struct_id, amount' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.struct_id, args.amount];
+        break;
+
+      case 'guild-create':
+        if (!args.reactor_id) {
+          return { status: 'error', message: 'Missing required arguments', error: 'guild-create requires: reactor_id' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2) as result`;
+        params = [player_id, args.reactor_id];
+        break;
+
+      case 'guild-update-entry-rank':
+        if (!args.guild_id || args.entry_rank === undefined) {
+          return { status: 'error', message: 'Missing required arguments', error: 'guild-update-entry-rank requires: guild_id, entry_rank' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.guild_id, args.entry_rank];
+        break;
+
+      case 'guild-membership-kick':
+        if (!args.guild_id || !args.target_player_id) {
+          return { status: 'error', message: 'Missing required arguments', error: 'guild-membership-kick requires: guild_id, target_player_id' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.guild_id, args.target_player_id];
+        break;
+
+      case 'guild-bank-mint':
+      case 'guild-bank-redeem':
+        if (!args.guild_id || !args.amount) {
+          return { status: 'error', message: 'Missing required arguments', error: `${action} requires: guild_id, amount` };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.guild_id, args.amount];
+        break;
+
+      case 'player-update-guild-rank':
+        if (!args.target_player_id || args.guild_rank === undefined) {
+          return { status: 'error', message: 'Missing required arguments', error: 'player-update-guild-rank requires: target_player_id, guild_rank' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.target_player_id, args.guild_rank];
+        break;
+
+      case 'player-send':
+        if (!args.to_player_id || !args.amount) {
+          return { status: 'error', message: 'Missing required arguments', error: 'player-send requires: to_player_id, amount' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.to_player_id, args.amount];
+        break;
+
+      case 'permission-grant-on-object':
+      case 'permission-revoke-on-object':
+      case 'permission-set-on-object':
+        if (!args.object_id || !args.target_player_id || args.permission_value === undefined) {
+          return { status: 'error', message: 'Missing required arguments', error: `${action} requires: object_id, target_player_id, permission_value` };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3, $4) as result`;
+        params = [player_id, args.object_id, args.target_player_id, args.permission_value];
+        break;
+
+      case 'permission-grant-on-address':
+      case 'permission-revoke-on-address':
+      case 'permission-set-on-address':
+        if (!args.address || args.permission_value === undefined) {
+          return { status: 'error', message: 'Missing required arguments', error: `${action} requires: address, permission_value` };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.address, args.permission_value];
+        break;
+
+      case 'permission-guild-rank-set':
+        if (!args.object_id || args.guild_rank === undefined || args.permission_value === undefined) {
+          return { status: 'error', message: 'Missing required arguments', error: 'permission-guild-rank-set requires: object_id, guild_rank, permission_value' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3, $4) as result`;
+        params = [player_id, args.object_id, args.guild_rank, args.permission_value];
+        break;
+
+      case 'permission-guild-rank-revoke':
+        if (!args.object_id || args.guild_rank === undefined) {
+          return { status: 'error', message: 'Missing required arguments', error: 'permission-guild-rank-revoke requires: object_id, guild_rank' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.object_id, args.guild_rank];
+        break;
+
+      case 'allocation-create':
+        if (!args.source_id || !args.power) {
+          return { status: 'error', message: 'Missing required arguments', error: 'allocation-create requires: source_id, power' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.source_id, args.power];
+        break;
+
+      case 'allocation-update':
+        if (!args.allocation_id || !args.power) {
+          return { status: 'error', message: 'Missing required arguments', error: 'allocation-update requires: allocation_id, power' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.allocation_id, args.power];
+        break;
+
+      case 'allocation-delete':
+        if (!args.allocation_id) {
+          return { status: 'error', message: 'Missing required arguments', error: 'allocation-delete requires: allocation_id' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2) as result`;
+        params = [player_id, args.allocation_id];
+        break;
+
+      case 'allocation-transfer':
+        if (!args.allocation_id || !args.to_player_id) {
+          return { status: 'error', message: 'Missing required arguments', error: 'allocation-transfer requires: allocation_id, to_player_id' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2, $3) as result`;
+        params = [player_id, args.allocation_id, args.to_player_id];
+        break;
+
+      case 'address-register':
+        if (!args.address) {
+          return { status: 'error', message: 'Missing required arguments', error: 'address-register requires: address' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2) as result`;
+        params = [player_id, args.address];
+        break;
+
+      case 'player-update-primary-address':
+        if (!args.address) {
+          return { status: 'error', message: 'Missing required arguments', error: 'player-update-primary-address requires: address' };
+        }
+        sql = `SELECT signer.${functionName}($1, $2) as result`;
+        params = [player_id, args.address];
+        break;
+
       default:
         return {
           status: 'error',
           message: `Action ${action} not yet implemented`,
-          error: 'This action requires additional implementation',
+          error: 'This action requires additional implementation. Use structs_prepare_command to generate the CLI command instead.',
         };
     }
 

@@ -62,40 +62,28 @@ export const calculationTools: Tool[] = [
   },
   {
     name: "structs_calculate_damage",
-    description: "Calculate how much damage an attacker will deal to a defender in combat. Takes into account weapon power, armor, and defense.",
+    description: "Estimate combat damage using the v0.15.0 per-projectile engine. Models evasion, blocking, hit rate, damage reduction (min 1), counter-attacks, recoil, and PDC. Returns per-shot breakdown. This is a probabilistic estimate -- actual combat uses on-chain RNG. See https://structs.ai/knowledge/mechanics/combat",
     inputSchema: {
       type: "object",
       properties: {
         attacker: {
-          description: "Attacker information (struct_type, weapon_type, power, etc.)",
+          type: "object",
+          description: "Attacker struct info: weapon_shots, weapon_damage, weapon_success_rate ({numerator, denominator}), weapon_blockable, weapon_control ('guided'|'unguided'), weapon_recoil_damage, health",
+        },
+        target: {
+          type: "object",
+          description: "Target struct info: health (default 3, Command Ship 6), damage_reduction, defense_type ('signal_jamming'|'defensive_maneuver'|'armour'|'stealth'|'indirect_combat'|'none'), evasion_rate ({numerator, denominator})",
         },
         defender: {
-          description: "Defender information (struct_type, armor, defense, health, etc.)",
+          type: "object",
+          description: "Optional defending struct: counter_attack_damage, blocking_success_rate ({numerator, denominator}), same_ambit_as_target (bool), same_ambit_as_attacker (bool)",
         },
-      },
-      required: ["attacker", "defender"],
-    },
-  },
-  {
-    name: "structs_calculate_trade_value",
-    description: "Calculate the trade value of resources (how much they're worth in watts and Alpha Matter). Optionally specify a market for market-specific rates.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        resource: {
-          type: "string",
-          description: "Resource type (e.g., 'alpha_matter')",
-        },
-        amount: {
+        pdc_damage: {
           type: "number",
-          description: "Resource amount",
-        },
-        market: {
-          type: "string",
-          description: "Market identifier (optional). If provided, uses market-specific rates.",
+          description: "Planetary Defense Cannon damage (total from all PDCs on the planet). Applied after all targets resolved.",
         },
       },
-      required: ["resource", "amount"],
+      required: ["attacker", "target"],
     },
   },
   {
@@ -144,152 +132,6 @@ export const calculationTools: Tool[] = [
         },
       },
       required: ["job_id"],
-    },
-  },
-  {
-    name: "structs_calculate_token_economics",
-    description: "Calculate guild token economics (collateral ratio, token value, inflation risk)",
-    inputSchema: {
-      type: "object",
-      properties: {
-        guild_id: {
-          type: "string",
-          description: "Guild ID (e.g., '0-1')",
-        },
-        locked_alpha_matter: {
-          type: "number",
-          description: "Locked Alpha Matter amount (optional)",
-        },
-        total_tokens_issued: {
-          type: "number",
-          description: "Total tokens issued (optional)",
-        },
-        tokens_in_circulation: {
-          type: "number",
-          description: "Tokens in circulation (optional)",
-        },
-      },
-      required: ["guild_id"],
-    },
-  },
-  {
-    name: "structs_optimize_resource_allocation",
-    description: "Optimize resource allocation across operations",
-    inputSchema: {
-      type: "object",
-      properties: {
-        available_resources: {
-          type: "object",
-          description: "Available resources",
-          properties: {
-            total_energy: {
-              type: "number",
-              description: "Total energy available",
-            },
-            alpha_matter: {
-              type: "number",
-              description: "Alpha Matter available",
-            },
-          },
-        },
-        operation_requirements: {
-          type: "array",
-          description: "Operation requirements",
-          items: {
-            type: "object",
-            properties: {
-              operation_id: {
-                type: "string",
-                description: "Operation ID",
-              },
-              operation_name: {
-                type: "string",
-                description: "Operation name",
-              },
-              energy_required: {
-                type: "number",
-                description: "Energy required",
-              },
-              priority: {
-                type: "number",
-                description: "Priority (higher = more important)",
-              },
-            },
-            required: ["operation_id", "operation_name", "energy_required"],
-          },
-        },
-        goals: {
-          type: "array",
-          description: "Optimization goals (e.g., ['maximize_efficiency', 'minimize_waste'])",
-          items: {
-            type: "string",
-          },
-        },
-      },
-      required: ["available_resources", "operation_requirements"],
-    },
-  },
-  {
-    name: "structs_calculate_economic_metrics",
-    description: "Calculate economic performance metrics (growth rate, utilization, market share)",
-    inputSchema: {
-      type: "object",
-      properties: {
-        entity_id: {
-          type: "string",
-          description: "Entity ID (player ID or guild ID)",
-        },
-        entity_type: {
-          type: "string",
-          description: "Entity type: 'player' or 'guild'",
-          enum: ["player", "guild"],
-        },
-        current_resources: {
-          type: "object",
-          description: "Current resources",
-          properties: {
-            alpha_matter: {
-              type: "number",
-            },
-            energy: {
-              type: "number",
-            },
-          },
-        },
-        previous_resources: {
-          type: "object",
-          description: "Previous resources (for growth calculation)",
-          properties: {
-            alpha_matter: {
-              type: "number",
-            },
-            energy: {
-              type: "number",
-            },
-          },
-        },
-        used_resources: {
-          type: "number",
-          description: "Used resources (for utilization calculation)",
-        },
-        available_resources: {
-          type: "number",
-          description: "Available resources (for utilization calculation)",
-        },
-        guild_production: {
-          type: "number",
-          description: "Guild production (for market share calculation)",
-        },
-        total_market_production: {
-          type: "number",
-          description: "Total market production (for market share calculation)",
-        },
-        time_period: {
-          type: "number",
-          description: "Time period for metrics (in blocks or time units)",
-        },
-      },
-      required: ["entity_id", "entity_type"],
     },
   },
 ];

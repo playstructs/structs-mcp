@@ -2,7 +2,9 @@
 
 ## Overview
 
-The Structs MCP Server provides AI agents with structured access to Structs documentation, schemas, APIs, and real-time game state through the Model Context Protocol (MCP). It exposes 47 tools (query, list, action, workflow, validation, calculation, error lookup). On structs.ai this server is referred to as the "user-structs" MCP server in [TOOLS](https://structs.ai/TOOLS); attach this server in Cursor or Claude under any name (e.g. "user-structs" or "structs-mcp") to use the same tools.
+The Structs MCP Server is an **intelligence layer** for AI agents playing Structs. Rather than just wrapping APIs, it provides tools that aggregate state, validate before mistakes, generate correct CLI commands, and diagnose failures -- work that would otherwise burn agent context. Updated for **v0.15.0-beta Pyrexnar** (`structstestnet-111`).
+
+It exposes 41 tools across query, action, calculation, validation, workflow, and 4 intelligence tools. On structs.ai this server is referred to as the "user-structs" MCP server in [TOOLS](https://structs.ai/TOOLS); attach this server in Cursor or Claude under any name (e.g. "user-structs" or "structs-mcp") to use the same tools.
 
 ## Structs
 
@@ -20,13 +22,24 @@ In the distant future the species of the galaxy are embroiled in a race for Alph
 
 **Critical rules** (CLI fallback and agent behavior):
 
-1. Every `structsd tx structs` command must include `--gas auto`; without it, transactions fail with out-of-gas.
+1. Every `structsd tx structs` command must include `--gas auto --gas-adjustment 1.5`; without it, transactions fail with out-of-gas.
 2. Place `--` before entity IDs in CLI (e.g. `structsd tx structs ... -- 4-5 6-10`) so IDs like `3-1` are not parsed as flags.
 3. One transaction at a time per account; wait ~6 seconds between submissions from the same account to avoid sequence mismatch.
 4. Never block on proof-of-work: initiate early, compute later. Use background PoW; at low difficulty (e.g. D=3) the hash is trivial and CPU is not wasted. See [structs.ai async-operations](https://structs.ai/awareness/async-operations) and [PROOF-OF-WORK.md](docs/guides/PROOF-OF-WORK.md).
 5. Refine ore immediately; ore is stealable, Alpha Matter is not.
 
-**Tool discovery**: Call `structs_query_endpoints` (optionally with `entity_type` or `category`) to get a minimal tool index (name, category, entity type, description) before calling specific tools.
+**Intelligence tools** (start here):
+
+| Tool | What it does |
+|------|--------------|
+| `structs_player_dashboard` | Full player state in one call: structs, fleets, power, operations |
+| `structs_preflight_check` | Check if an action will succeed before spending gas |
+| `structs_prepare_command` | Generate exact `structsd` CLI commands, ready to copy-paste |
+| `structs_diagnose_error` | Parse failed TX errors into what/why/fix with CLI commands |
+
+**Tool discovery**: Call `structs_query_endpoints` (optionally with `entity_type` or `category`) to get a minimal tool index.
+
+**v0.15.0 changes**: 24-bit permission system (PermAll=16777215), guild rank permissions, rewritten combat engine (per-projectile, min damage 1, counter-attack limits), new actions (guild-create, player-send, permission-guild-rank-set/revoke). See [CHANGELOG](https://raw.githubusercontent.com/playstructs/structs-ai/refs/heads/main/CHANGELOG.md).
 
 ---
 
@@ -68,25 +81,26 @@ In the distant future the species of the galaxy are embroiled in a race for Alph
 ## Project Structure
 
 ```
-implementation/
-├── src/
-│   ├── server.ts               # Main MCP server
-│   ├── resources/              # Resource handlers
-│   ├── tools/                  # Tool implementations
-│   │   ├── action.ts           # Transaction submission & player creation
-│   │   ├── calculation.ts      # Calculation tools
-│   │   ├── error-lookup.ts     # Error code lookup
-│   │   ├── query.ts            # Query tools
-│   │   └── validation.ts       # Validation tools
-│   └── utils/                  # Utilities
-│       ├── database.ts         # PostgreSQL connection & queries
-│       ├── proof-of-work.ts    # Proof-of-work calculations
-│       └── uri.ts              # URI parsing
-├── tests/                      # Test files
-├── dist/                       # Build output
-├── package.json
-├── tsconfig.json
-└── README.md
+src/
+├── server.ts                   # Main MCP server
+├── prompts/                    # MCP prompt templates (game loop, combat, first session)
+├── resources/                  # Resource handlers & structs:// URI resolution
+├── tools/                      # Tool implementations
+│   ├── action.ts               # Transaction submission (signer DB)
+│   ├── calculation.ts          # Power, mining, damage, trade calculators
+│   ├── command.ts              # [NEW] CLI command preparation (intelligence layer)
+│   ├── dashboard.ts            # [NEW] Player dashboard (composite state)
+│   ├── error-lookup.ts         # Error code lookup & diagnosis
+│   ├── preflight.ts            # [NEW] Pre-flight validation (no-gas checks)
+│   ├── query.ts                # Query & list tools (consensus API)
+│   ├── validation.ts           # Entity ID & schema validation
+│   ├── definitions/            # Tool schemas (JSON Schema)
+│   └── handlers/               # Tool handler wiring
+└── utils/                      # Utilities
+    ├── database.ts             # PostgreSQL connection & queries
+    ├── proof-of-work.ts        # Proof-of-work calculations
+    ├── tool-metadata.ts        # Tool categorization & entity type metadata
+    └── uri.ts                  # URI parsing
 ```
 
 ---
